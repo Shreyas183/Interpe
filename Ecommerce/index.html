@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>E-Commerce</title>
+    <style>
+        :root {
+            --bg: #f4f4f4;
+            --card: #fff;
+            --text: #000;
+            --primary: #28a745;
+        }
+
+        body.dark {
+            --bg: #121212;
+            --card: #1e1e1e;
+            --text: #fff;
+            --primary: #0d6efd;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            transition: 0.3s;
+        }
+
+        header {
+            background: #222;
+            color: #fff;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            margin: 0
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+
+        input,
+        select {
+            padding: 8px;
+        }
+
+        .products {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .product {
+            background: var(--card);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            text-align: center;
+        }
+
+        .product img {
+            width: 180px;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .product button {
+            background: var(--primary);
+            border: none;
+            color: #fff;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .cart {
+            margin-top: 30px;
+            background: var(--card);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .qty-controls button {
+            padding: 4px 8px
+        }
+
+        .checkout-btn {
+            background: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer
+        }
+
+        .badge {
+            background: red;
+            color: #fff;
+            border-radius: 50%;
+            padding: 3px 8px;
+            font-size: 12px;
+            margin-left: 5px
+        }
+
+        footer {
+            background: #222;
+            color: #fff;
+            text-align: center;
+            padding: 10px;
+            margin-top: 40px;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            justify-content: center;
+            align-items: center
+        }
+
+        .modal-content {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 10px;
+            width: 300px;
+            text-align: center
+        }
+
+        .modal-content img {
+            width: 200px;
+            height: 200px;
+            object-fit: cover
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #333;
+            color: #fff;
+            padding: 10px 15px;
+            border-radius: 5px;
+            display: none
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Store</h1>
+        <div>
+            <button onclick="toggleTheme()">🌙</button>
+            Cart <span class="badge" id="cartCount">0</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="top-bar">
+            <input type="text" id="searchInput" placeholder="Search..." />
+            <select id="sortSelect">
+                <option value="default">Sort</option>
+                <option value="low">Low → High</option>
+                <option value="high">High → Low</option>
+            </select>
+            <input type="text" id="couponInput" placeholder="Coupon code" />
+            <button onclick="applyCoupon()">Apply</button>
+        </div>
+
+        <div class="products" id="productList"></div>
+
+        <div class="cart">
+            <h2>Cart</h2>
+            <div id="cartItems"></div>
+            <div>Total: ₹<span id="totalPrice">0</span></div>
+            <button class="checkout-btn" onclick="checkout()">Checkout</button>
+        </div>
+    </div>
+
+    <footer>© 2026 My Store</footer>
+
+    <!-- Modal -->
+    <div class="modal" id="productModal">
+        <div class="modal-content">
+            <img id="modalImg" />
+            <h3 id="modalName"></h3>
+            <p id="modalPrice"></p>
+            <button onclick="closeModal()">Close</button>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">Added to cart</div>
+
+    <script>
+        const products = [
+            { id: 1, name: 'Headphones', price: 1500, img: 'https://img.tatacliq.com/images/i6/437Wx649H/MP000000004215613_437Wx649H_20200802130853.jpeg' },
+            { id: 2, name: 'Smart Watch', price: 2500, img: 'https://assets.myntassets.com/dpr_1.5,q_30,w_400,c_limit,fl_progressive/assets/images/29576790/2024/5/29/53c01d40-d4d3-48a4-a6c9-494ff4589f511716962620631-Noise-ColorFit-Icon-4-Smartwatch---Jet-Black-803171696261998-1.jpg' },
+            { id: 3, name: 'Shoes', price: 1800, img: 'https://m.media-amazon.com/images/I/614aiM56siL._AC_UY1000_.jpg' },
+            { id: 4, name: 'Backpack', price: 1200, img: 'https://americantourister.in/cdn/shop/files/BRETT4.0LPBP01BLACKLEFT455714copy.jpg?crop=center&height=3599&v=1748323485&width=3000' }
+        ];
+
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        let discount = 0;
+
+        const productList = document.getElementById('productList');
+        const cartItems = document.getElementById('cartItems');
+        const totalPriceEl = document.getElementById('totalPrice');
+        const cartCount = document.getElementById('cartCount');
+
+        function renderProducts(list = products) {
+            productList.innerHTML = '';
+            list.forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'product';
+                div.innerHTML = `<img src="${p.img}" onclick="openModal(${p.id})"><h3>${p.name}</h3><p>₹${p.price}</p><button onclick="addToCart(${p.id})">Add</button>`;
+                productList.appendChild(div);
+            });
+        }
+
+        function addToCart(id) {
+            const p = products.find(x => x.id === id);
+            const e = cart.find(x => x.id === id);
+            if (e) e.qty++; else cart.push({ ...p, qty: 1 });
+            showToast(); saveCart(); renderCart();
+        }
+
+        function renderCart() {
+            cartItems.innerHTML = ''; let total = 0; let count = 0;
+            cart.forEach((i, idx) => {
+                total += i.price * i.qty; count += i.qty;
+                const d = document.createElement('div'); d.className = 'cart-item';
+                d.innerHTML = `<span>${i.name} x ${i.qty}</span><div><button onclick="changeQty(${idx},-1)">-</button><button onclick="changeQty(${idx},1)">+</button></div>`;
+                cartItems.appendChild(d);
+            });
+            total = total - discount;
+            totalPriceEl.textContent = total < 0 ? 0 : total;
+            cartCount.textContent = count;
+        }
+
+        function changeQty(i, d) { cart[i].qty += d; if (cart[i].qty <= 0) cart.splice(i, 1); saveCart(); renderCart(); }
+        function saveCart() { localStorage.setItem('cart', JSON.stringify(cart)); }
+
+        function checkout() { if (!cart.length) { alert('Empty cart'); return; } alert('Order placed!'); cart = []; discount = 0; saveCart(); renderCart(); }
+
+        function openModal(id) {
+            const p = products.find(x => x.id === id);
+            document.getElementById('modalImg').src = p.img;
+            document.getElementById('modalName').textContent = p.name;
+            document.getElementById('modalPrice').textContent = '₹' + p.price;
+            document.getElementById('productModal').style.display = 'flex';
+        }
+        function closeModal() { document.getElementById('productModal').style.display = 'none'; }
+
+        function toggleTheme() { document.body.classList.toggle('dark'); }
+
+        function applyCoupon() {
+            const code = document.getElementById('couponInput').value;
+            if (code === 'SAVE10') { discount = 100; alert('₹100 off applied'); } else alert('Invalid coupon'); renderCart();
+        }
+
+        function showToast() { const t = document.getElementById('toast'); t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 1500); }
+
+        // Search + Sort handlers
+        const searchInput = document.getElementById('searchInput');
+        const sortSelect = document.getElementById('sortSelect');
+
+        function applyFilters() {
+            let list = [...products];
+
+            // search
+            const q = searchInput.value.toLowerCase();
+            if (q) { list = list.filter(p => p.name.toLowerCase().includes(q)); }
+
+            // sort
+            if (sortSelect.value === 'low') list.sort((a, b) => a.price - b.price);
+            if (sortSelect.value === 'high') list.sort((a, b) => b.price - a.price);
+
+            renderProducts(list);
+        }
+
+        searchInput.addEventListener('input', applyFilters);
+        sortSelect.addEventListener('change', applyFilters);
+
+        renderProducts(); renderCart();
+    </script>
+</body>
+
+</html>
